@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using OWML.Common;
 using OWML.ModHelper;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -27,7 +28,25 @@ namespace ExclusiveFullscreen
             new Harmony("MegaPiggy.ExclusiveFullscreen")
                 .PatchAll(Assembly.GetExecutingAssembly());
 
+            StartCoroutine(EnsureExclusiveFullscreenDelayed());
+        }
+
+        private IEnumerator EnsureExclusiveFullscreenDelayed()
+        {
+            // delay so unity doesn't fail on startup
+            yield return new WaitUntil(() => Application.isFocused);
+            yield return new WaitForSecondsRealtime(0.25f);
+
             EnsureExclusiveFullscreen();
+        }
+
+        public void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus &&
+                Screen.fullScreenMode == FullScreenMode.FullScreenWindow)
+            {
+                StartCoroutine(EnsureExclusiveFullscreenDelayed());
+            }
         }
 
         private void EnsureExclusiveFullscreen()
