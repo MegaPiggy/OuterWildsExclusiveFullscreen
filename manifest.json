@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ow-mods/owml/master/schemas/manifest_schema.json",
+  "filename": "ExclusiveFullscreen.dll",
+  "author": "MegaPiggy",
+  "name": "Exclusive Fullscreen",
+  "uniqueName": "MegaPiggy.ExclusiveFullscreen",
+  "version": "1.0.0",
+  "owmlVersion": "2.15.1",
+  "dependencies": []
+}
