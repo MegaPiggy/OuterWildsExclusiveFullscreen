@@ -15,32 +15,34 @@ namespace ExclusiveFullscreen
         public void Awake()
         {
             Instance = this;
-            // You won't be able to access OWML's mod helper in Awake.
-            // So you probably don't want to do anything here.
-            // Use Start() instead.
         }
 
         public void Start()
         {
-            // Starting here, you'll have access to OWML's mod helper.
-            ModHelper.Console.WriteLine($"My mod {nameof(ExclusiveFullscreen)} is loaded!", MessageType.Success);
+            ModHelper.Console.WriteLine(
+                "Patching",
+                MessageType.Info
+            );
 
-            new Harmony("MegaPiggy.ExclusiveFullscreen").PatchAll(Assembly.GetExecutingAssembly());
+            new Harmony("MegaPiggy.ExclusiveFullscreen")
+                .PatchAll(Assembly.GetExecutingAssembly());
 
-            // Example of accessing game code.
-            OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen); // We start on title screen
-            LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
+            EnsureExclusiveFullscreen();
         }
 
-        public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene)
+        private void EnsureExclusiveFullscreen()
         {
-            if (newScene != OWScene.SolarSystem) return;
-            ModHelper.Console.WriteLine("Loaded into solar system!", MessageType.Success);
+            if (Screen.fullScreenMode != FullScreenMode.FullScreenWindow)
+                return;
+
+            ModHelper.Console.WriteLine(
+                "Changing borderless fullscreen to exclusive fullscreen.",
+                MessageType.Info
+            );
+
+            Screen.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
         }
     }
-
-}
-
 
 [HarmonyPatch(typeof(GraphicSettings), nameof(GraphicSettings.ApplyAllGraphicSettings))]
 public static class GraphicSettings_ApplyAllGraphicSettings_Patch
@@ -54,20 +56,26 @@ public static class GraphicSettings_ApplyAllGraphicSettings_Patch
             typeof(bool)
         });
 
-    private static readonly MethodInfo ReplacementSetResolution = typeof(GraphicSettings_ApplyAllGraphicSettings_Patch).GetMethod(
-        nameof(SetResolution),
-        BindingFlags.Static | BindingFlags.NonPublic);
+    private static readonly MethodInfo ReplacementSetResolution =
+        typeof(GraphicSettings_ApplyAllGraphicSettings_Patch).GetMethod(
+            nameof(SetResolution),
+            BindingFlags.Static | BindingFlags.NonPublic
+        );
 
     [HarmonyTranspiler]
-    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    public static IEnumerable<CodeInstruction> Transpiler(
+        IEnumerable<CodeInstruction> instructions)
     {
         foreach (var instruction in instructions)
         {
             if (instruction.Calls(OriginalSetResolution))
             {
-                yield return new CodeInstruction(OpCodes.Call, ReplacementSetResolution)
-                    .WithLabels(instruction.labels)
-                    .WithBlocks(instruction.blocks);
+                yield return new CodeInstruction(
+                    OpCodes.Call,
+                    ReplacementSetResolution
+                )
+                .WithLabels(instruction.labels)
+                .WithBlocks(instruction.blocks);
             }
             else
             {
@@ -86,4 +94,5 @@ public static class GraphicSettings_ApplyAllGraphicSettings_Patch
                 : FullScreenMode.Windowed
         );
     }
+}
 }
